@@ -32,14 +32,23 @@
 		video.setAttribute("muted", "");
 		video.setAttribute("playsinline", "");
 		const socket = io();
+		let reconnect_interval = null;
 
 		socket.on("session_id", (session_id) => {
 			console.log("session_id", session_id);
 		});
 
+		socket.on("connect", () => {
+			if (reconnect_interval)
+				clearInterval(reconnect_interval)
+		})
+
 		socket.on("disconnect", () => {
 			console.log("disconnected");
-			location.reload();
+			reconnect_interval = setInterval(() => {
+				socket.socket.connect();
+			}, 1000)
+			// location.reload();
 		});
 
 		canvas.width = STREAM_WIDTH;
