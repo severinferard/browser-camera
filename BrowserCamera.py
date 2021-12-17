@@ -6,7 +6,6 @@ import base64
 import io
 from imageio import imread
 import threading
-import queue
 
 
 # ======================================== DO NOT MODIFY ================================================
@@ -16,14 +15,15 @@ import queue
 
 app = Flask(__name__, template_folder="_templates")
 socketio = SocketIO(app)
-q = queue.Queue()
+last_image = None
 
 @socketio.on('stream')
 def handle_stream(data):
+	global last_image
 	base64_string = data.split(',')[1]
 	img = imread(io.BytesIO(base64.b64decode(base64_string)))
 	cv2_img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-	q.put(cv2_img)
+	last_image = cv2_img
 
 @socketio.on('connect')
 def handle_connection(client_id):
@@ -45,11 +45,10 @@ class BrowserCamera:
 		print("Browser Camera waiting for connection...")
 
 	def read(self):
-		val = np.zeros((100,100,3), np.uint8)
+		global last_image
+		last_image = np.zeros((100,100,3), np.uint8)
 		while True:
-			if not q.empty():
-				val = q.get()
-			yield val
+			yield last_image
 
 
 if __name__ == '__main__':
