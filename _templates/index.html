@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8" />
+	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>BrowserCam</title>
+	<script src="https://cdn.socket.io/4.4.0/socket.io.min.js"
+		integrity="sha384-1fOn6VtTq3PWwfsOrk45LnYcGosJwzMHv+Xh/Jx5303FVOXzEnw0EpLv30mtjmlj"
+		crossorigin="anonymous"></script>
+</head>
+
+<body>
+	<video src="" id="video" style="width: 100%; height: 100%" autoplay="true"></video>
+	<canvas style="display: none" id="preview"></canvas>
+	<div id="log"></div>
+	<script id="rendered-js">
+
+		const STREAM_WIDTH = 500	// MODIFY THOSE
+		const STREAM_HEIGHT = 700
+		const FPS = 20
+
+		navigator.getUserMedia =
+			navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+		const canvas = document.querySelector("#preview");
+		const context = canvas.getContext("2d");
+		const video = document.querySelector("#video");
+		video.style.width = document.width + "px";
+		video.style.height = document.height + "px";
+		video.setAttribute("autoplay", "");
+		video.setAttribute("muted", "");
+		video.setAttribute("playsinline", "");
+		const socket = io();
+
+		socket.on("session_id", (session_id) => {
+			console.log("session_id", session_id);
+		});
+
+		socket.on("disconnect", () => {
+			console.log("disconnected");
+			location.reload();
+		});
+
+		canvas.width = STREAM_WIDTH;
+		canvas.height = STREAM_HEIGHT;
+
+		context.width = canvas.width;
+		context.height = canvas.height;
+
+		var facingMode = "user";
+
+		var constraints = {
+			audio: false,
+			video: {
+				facingMode: facingMode,
+			},
+		};
+
+		const Draw = (video, context) => {
+			context.drawImage(video, 0, 0, context.width, context.height);
+			socket.emit("stream", canvas.toDataURL("image/jpeg", 0.4));
+		};
+
+		navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+			video.srcObject = stream;
+		});
+
+		document.body.appendChild(video);
+
+		video.addEventListener("click", function () {
+			if (facingMode == "user") {
+				facingMode = "environment";
+			} else {
+				facingMode = "user";
+			}
+
+			constraints = {
+				audio: false,
+				video: {
+					facingMode: facingMode,
+				},
+			};
+
+			navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+				video.srcObject = stream;
+			});
+		});
+		setInterval(function () {
+			Draw(video, context);
+		}, 1000 / FPS);
+	</script>
+</body>
+
+</html>
