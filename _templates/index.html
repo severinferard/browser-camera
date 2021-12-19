@@ -17,10 +17,7 @@
     <canvas style="display: none" id="preview"></canvas>
     <div id="log"></div>
     <script id="rendered-js">
-      const STREAM_WIDTH = 500; // MODIFY THOSE
-      const STREAM_HEIGHT = 700;
-      const FPS = 20;
-	  const VIDEO_QUALITY = 0.4;
+	  const VIDEO_QUALITY = 0.2;
 
       navigator.getUserMedia =
         navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
@@ -50,8 +47,8 @@
         }, 1000);
       });
 
-      canvas.width = STREAM_WIDTH;
-      canvas.height = STREAM_HEIGHT;
+      canvas.width = {{FRAME_WIDTH}};
+      canvas.height = {{FRAME_HEIGHT}};
 
       context.width = canvas.width;
       context.height = canvas.height;
@@ -97,7 +94,7 @@
       });
       setInterval(function () {
         Draw(video, context);
-      }, 1000 / FPS);
+      }, 1000 / {{FPS}});
     </script>
   </body>
 </html>
