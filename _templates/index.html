@@ -1,104 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BrowserCam</title>
+    <script
+      src="https://cdn.socket.io/4.4.0/socket.io.min.js"
+      integrity="sha384-1fOn6VtTq3PWwfsOrk45LnYcGosJwzMHv+Xh/Jx5303FVOXzEnw0EpLv30mtjmlj"
+      crossorigin="anonymous"
+    ></script>
+  </head>
 
-<head>
-	<meta charset="UTF-8" />
-	<meta http-equiv="X-UA-Compatible" content="IE=edge" />
-	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-	<title>BrowserCam</title>
-	<script src="https://cdn.socket.io/4.4.0/socket.io.min.js"
-		integrity="sha384-1fOn6VtTq3PWwfsOrk45LnYcGosJwzMHv+Xh/Jx5303FVOXzEnw0EpLv30mtjmlj"
-		crossorigin="anonymous"></script>
-</head>
+  <body>
+    <video src="" id="video" style="width: 100%; height: 100%" autoplay="true"></video>
+    <canvas style="display: none" id="preview"></canvas>
+    <div id="log"></div>
+    <script id="rendered-js">
+      const STREAM_WIDTH = 500; // MODIFY THOSE
+      const STREAM_HEIGHT = 700;
+      const FPS = 20;
+	  const VIDEO_QUALITY = 0.4;
 
-<body>
-	<video src="" id="video" style="width: 100%; height: 100%" autoplay="true"></video>
-	<canvas style="display: none" id="preview"></canvas>
-	<div id="log"></div>
-	<script id="rendered-js">
+      navigator.getUserMedia =
+        navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+      const canvas = document.querySelector("#preview");
+      const context = canvas.getContext("2d");
+      const video = document.querySelector("#video");
+      video.style.width = document.width + "px";
+      video.style.height = document.height + "px";
+      video.setAttribute("autoplay", "");
+      video.setAttribute("muted", "");
+      video.setAttribute("playsinline", "");
+      const socket = io();
+      let reconnect_interval = null;
 
-		const STREAM_WIDTH = 500	// MODIFY THOSE
-		const STREAM_HEIGHT = 700
-		const FPS = 20
+      socket.on("session_id", (session_id) => {
+        console.log("session_id", session_id);
+      });
 
-		navigator.getUserMedia =
-			navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-		const canvas = document.querySelector("#preview");
-		const context = canvas.getContext("2d");
-		const video = document.querySelector("#video");
-		video.style.width = document.width + "px";
-		video.style.height = document.height + "px";
-		video.setAttribute("autoplay", "");
-		video.setAttribute("muted", "");
-		video.setAttribute("playsinline", "");
-		const socket = io();
-		let reconnect_interval = null;
+      socket.on("connect", () => {
+        if (reconnect_interval) clearInterval(reconnect_interval);
+      });
 
-		socket.on("session_id", (session_id) => {
-			console.log("session_id", session_id);
-		});
+      socket.on("disconnect", () => {
+        console.log("disconnected");
+        reconnect_interval = setInterval(() => {
+          socket.socket.connect();
+        }, 1000);
+      });
 
-		socket.on("connect", () => {
-			if (reconnect_interval)
-				clearInterval(reconnect_interval)
-		})
+      canvas.width = STREAM_WIDTH;
+      canvas.height = STREAM_HEIGHT;
 
-		socket.on("disconnect", () => {
-			console.log("disconnected");
-			reconnect_interval = setInterval(() => {
-				socket.socket.connect();
-			}, 1000)
-			// location.reload();
-		});
+      context.width = canvas.width;
+      context.height = canvas.height;
 
-		canvas.width = STREAM_WIDTH;
-		canvas.height = STREAM_HEIGHT;
+      var facingMode = "user";
 
-		context.width = canvas.width;
-		context.height = canvas.height;
+      var constraints = {
+        audio: false,
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+      };
 
-		var facingMode = "user";
+      const Draw = (video, context) => {
+        context.drawImage(video, 0, 0, context.width, context.height);
+        socket.emit("stream", canvas.toDataURL("image/jpeg", VIDEO_QUALITY));
+      };
 
-		var constraints = {
-			audio: false,
-			video: {
-				facingMode: facingMode,
-			},
-		};
+      navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+        video.srcObject = stream;
+      });
 
-		const Draw = (video, context) => {
-			context.drawImage(video, 0, 0, context.width, context.height);
-			socket.emit("stream", canvas.toDataURL("image/jpeg", 0.4));
-		};
+      document.body.appendChild(video);
+      console.log(navigator.mediaDevices.enumerateDevices());
 
-		navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
-			video.srcObject = stream;
-		});
+      video.addEventListener("click", function () {
+        if (facingMode == "user") {
+          facingMode = "environment";
+        } else {
+          facingMode = "user";
+        }
 
-		document.body.appendChild(video);
+        constraints = {
+          audio: false,
+          video: {
+            facingMode: facingMode,
+          },
+        };
 
-		video.addEventListener("click", function () {
-			if (facingMode == "user") {
-				facingMode = "environment";
-			} else {
-				facingMode = "user";
-			}
-
-			constraints = {
-				audio: false,
-				video: {
-					facingMode: facingMode,
-				},
-			};
-
-			navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
-				video.srcObject = stream;
-			});
-		});
-		setInterval(function () {
-			Draw(video, context);
-		}, 1000 / FPS);
-	</script>
-</body>
-
+        navigator.mediaDevices.getUserMedia(constraints).then(function success(stream) {
+          video.srcObject = stream;
+        });
+      });
+      setInterval(function () {
+        Draw(video, context);
+      }, 1000 / FPS);
+    </script>
+  </body>
 </html>

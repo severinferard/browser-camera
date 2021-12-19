@@ -1,6 +1,6 @@
-opencv-python
-flask
-flask-socketio
+opencv-python==4.5.4.60
+Flask==2.0.2 
+Flask-SocketIO==5.1.1
 pyopenssl
-eventlet
-imageio
+eventlet==0.33.0
+imageio==2.13.3

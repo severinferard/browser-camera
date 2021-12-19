@@ -1,11 +1,11 @@
 import cv2
 from BrowserCamera import BrowserCamera
 
-browserCamera = BrowserCamera()
+cap = BrowserCamera()
+while True:
+	ret, frame = cap.read()
 
-for frame in browserCamera.read():
+	# *** WRITE YOUR CODE HERE ***  
 
-		# *** WRITE YOUR CODE HERE ***  
-
-		cv2.imshow("preview", frame)
-		cv2.waitKey(1)
+	cv2.imshow("preview", frame)
+	cv2.waitKey(1)
