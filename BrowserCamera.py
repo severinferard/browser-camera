@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, redirect, request
 from flask_socketio import SocketIO
 import cv2
 import numpy as np;
@@ -6,7 +6,7 @@ import base64
 import io
 from imageio import imread
 import threading
-import os 
+import os
 
 DIR_PATH = os.path.dirname(os.path.realpath(__file__))
 
@@ -14,7 +14,14 @@ class BrowserCamera:
 	def __init__(self):
 		self._properties = {"frame_width": 500, "frame_height": 700, "fps": 20}
 		self.last_image = None
+		self.create_ssl_certs()
 		self.app()
+
+	def create_ssl_certs(self):
+		if not os.path.isdir(f"{DIR_PATH}/_ssl"):
+			os.mkdir(f"{DIR_PATH}/_ssl")
+		if not os.path.isfile(f"{DIR_PATH}/_ssl/cert.pem"):
+			os.system(f"""openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost" -keyout {DIR_PATH}/_ssl/key.pem  -out {DIR_PATH}/_ssl/cert.pem""")
 
 	def read(self):
 		global last_image
@@ -70,6 +77,7 @@ class BrowserCamera:
 				FRAME_HEIGHT=self._properties["frame_height"],
 				FPS=self._properties["fps"]
 			)
+			return (500)
 
 		def run_camera_app():
 			socketio.run(app, host="0.0.0.0", keyfile=f'{DIR_PATH}/_ssl/key.pem', certfile=f'{DIR_PATH}/_ssl/cert.pem')
